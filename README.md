@@ -62,68 +62,110 @@ cp -r writer-skill/writer ~/.claude/skills/writer
 
 或者直接把整个仓库克隆到 skills 目录下。
 
-## 使用
+## 使用：写文章
 
-安装后，直接跟 Claude 说：
+安装后，直接跟 Claude 说你的想法：
 
-- "帮我写篇文章，聊聊为什么现代人越来越喜欢独处"
-- "我有个想法，AI 会不会取代程序员？写篇公众号文章"
-- "直接帮我写一篇关于拖延症的文章，发知乎和小红书"
-- "写完了，帮我审查一下"
+```
+"帮我写篇文章，聊聊为什么现代人越来越喜欢独处"
+"我有个想法，AI 会不会取代程序员？写篇公众号文章"
+"直接帮我写一篇关于拖延症的文章，发知乎和小红书"
+"写完了，帮我审查一下"
+```
 
-Claude 会自动识别意图并启动对应的工作流。
+Claude 会自动识别意图并启动对应的工作流。**不需要跑任何脚本**，整个流程在对话中自动完成。
 
-## 自带的脚本工具
+### 流程中每个文件的角色
 
-Skill 内置了可独立运行的 Python 脚本（仅依赖标准库）：
+| 阶段 | Claude 做什么 | 用到的文件 |
+|---|---|---|
+| Phase 1: 拆解想法 | 理解你的灵感，提出角度 | `SKILL.md` |
+| Phase 2: 搜索研究 | 用 WebSearch 搜集事实和数据 | `SKILL.md` |
+| Phase 3: 写稿 | 按口语化风格写完整文章 | `SKILL.md` |
+| Phase 4: 事实核查 | 逐条核查文中的事实声明 | `SKILL.md` |
+| Phase 5: 多角色审查 | 5 个 AI 角色并行审查文章 | `SKILL.md` + `roles/*.md` |
 
-### 多角色并行审查
+> **你只需要 `SKILL.md` + `roles/` 目录。** Claude 读取这些文件后，用自身的内置工具（WebSearch、Agent 等）跑完全流程。
+
+---
+
+## 使用：开发与测试 Skill
+
+> 以下工具是给**想改进这个 Skill 的开发者**用的。写文章不需要。
+
+如果你 fork 了这个项目想优化 prompt，需要一种方式验证"改完之后效果是不是变好了"。这就是以下脚本的用途。
+
+### 第一步：跑对比测试
 
 ```bash
 cd ~/.claude/skills/writer
-python3 -m scripts.run_review /path/to/article.md --output-dir /path/to/reviews
-```
-
-5 个角色并行跑 `claude -p`，自动汇总结果。
-
-### 测试用例运行器
-
-```bash
 python3 -m scripts.run_eval --workspace /path/to/workspace
 ```
 
-跑 `evals/evals.json` 中的测试用例，with/without skill 对比，验证 skill 是否有效。
+读取 `evals/evals.json` 里的测试用例，每个用例跑两遍：
+- **有 Skill**：带着 SKILL.md 生成文章
+- **没 Skill**：裸跑同一个 prompt
 
-### HTML 审查界面
+输出保存在 workspace 目录，方便对比。
+
+### 第二步：查看对比结果
 
 ```bash
 python3 eval-viewer/generate_review.py /path/to/workspace --skill-name writer
 ```
 
-启动浏览器界面，可视化对比测试结果，支持在线反馈。
+启动浏览器界面（默认 `localhost:3117`），可视化对比 with/without skill 的输出，支持在线打分和反馈。
+
+### 第三步（可选）：命令行批量审查
+
+```bash
+python3 -m scripts.run_review /path/to/article.md --output-dir /path/to/reviews
+```
+
+不进对话，直接在命令行跑 5 个角色并行审查。适合批量处理或 CI 集成。
+
+### 各文件说明
+
+| 文件 | 用途 |
+|---|---|
+| `scripts/run_eval.py` | 测试运行器 — 跑 with/without skill 对比 |
+| `scripts/run_review.py` | 命令行版多角色审查 — 用 `claude -p` 启动 5 个并行进程 |
+| `scripts/utils.py` | 共享工具函数 — 解析 SKILL.md、处理环境变量等 |
+| `scripts/__init__.py` | Python 包标记文件（空的） |
+| `evals/evals.json` | 4 个测试用例 — 包含 prompt、期望输出、评估维度 |
+| `agents/grader.md` | 评分 agent — 测试跑完后自动评判输出质量 |
+| `eval-viewer/generate_review.py` | 启动 HTML 可视化界面 |
+| `eval-viewer/viewer.html` | 可视化模板 — 展示对比结果 |
+
+---
 
 ## 目录结构
 
 ```
 writer/
-├── SKILL.md                    # 主技能定义
-├── roles/                      # 5 个审查角色 prompt
-│   ├── reader.md
-│   ├── editor.md
-│   ├── fact-checker.md
-│   ├── style-coach.md
-│   └── strategist.md
+│
+│  📝 写文章用的（核心）
+├── SKILL.md                    # 主技能定义，驱动整个写作流程
+├── roles/                      # 5 个审查角色 prompt（Phase 5 用）
+│   ├── reader.md               #   读者 — 钩子、参与感、转发欲
+│   ├── editor.md               #   编辑 — 结构、节奏、用词
+│   ├── fact-checker.md         #   事实核查员 — 数据、引用准确性
+│   ├── style-coach.md          #   文体教练 — 口语节奏、意象
+│   └── strategist.md           #   平台策略师 — 标题力、平台适配
+│
+│  🔧 改进 Skill 用的（开发/测试）
 ├── scripts/                    # Python 脚本
-│   ├── utils.py
-│   ├── run_review.py           # 多角色并行审查
-│   └── run_eval.py             # 测试用例运行器
-├── eval-viewer/                # HTML 审查界面
-│   ├── generate_review.py
-│   └── viewer.html
+│   ├── run_eval.py             #   with/without skill 对比测试
+│   ├── run_review.py           #   命令行批量审查
+│   ├── utils.py                #   共享工具函数
+│   └── __init__.py             #   Python 包标记
 ├── evals/
-│   └── evals.json              # 测试用例
-└── agents/
-    └── grader.md               # 写作评分 agent
+│   └── evals.json              #   测试用例（4 个）
+├── agents/
+│   └── grader.md               #   测试评分 agent
+└── eval-viewer/
+    ├── generate_review.py      #   启动可视化界面
+    └── viewer.html             #   HTML 模板
 ```
 
 ## 设计理念
