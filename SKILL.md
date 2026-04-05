@@ -35,11 +35,37 @@ The user's own messages are the best style reference. Mirror their tone. If they
 
 ## Workflow
 
-The workflow has 4 phases. Present each phase's output to the user before moving on — don't run all phases silently.
+The workflow has 5 phases. Each phase MUST show a progress indicator on entry and a transition prompt on exit. Never run phases silently — the user should always know where they are and what's coming next.
+
+### Progress Indicator (REQUIRED at the start of every phase)
+
+Display this progress bar at the START of every phase output:
+
+```
+---
+📍 **Phase X/5: [中文阶段名]** | ① 解题 → ② 调研 → ③ 初稿 → ④ 核查+排版 → ⑤ 审查
+---
+```
+
+Rules:
+- Use ✅ to mark completed phases, **bold** for the current phase, plain text for upcoming phases
+- Example for Phase 3: `✅① 解题 → ✅② 调研 → **③ 初稿** → ④ 核查+排版 → ⑤ 审查`
+- In Quick Mode, still show progress — just advance faster
+
+### Transition Prompt (REQUIRED at the end of every phase)
+
+After presenting each phase's output, ALWAYS end with a boxed transition prompt:
+
+```
+> **下一步 → Phase X: [名称]**：[一句话说明下一步做什么]
+> [需要用户做什么：选择方向 / 确认素材 / 说"继续"/ etc.]
+```
+
+This prevents the user from ever wondering "is it done?" or "what do I do now?"
 
 ---
 
-### Phase 1: Unpack the Idea
+### Phase 1: 解题（Unpack the Idea）
 
 The user gives you a fragment — maybe a sentence, a question, a link, a shower thought. Your job:
 
@@ -50,11 +76,11 @@ The user gives you a fragment — maybe a sentence, a question, a link, a shower
    - Is there a personal experience behind this?
 3. **Propose 2-3 angles** the article could take — each in one sentence with a working title
 
-Wait for the user to pick a direction (or suggest their own) before proceeding.
+**Exit prompt:** Ask the user to pick an angle (or suggest their own). Do NOT proceed until they respond.
 
 ---
 
-### Phase 2: Research & Gather Material
+### Phase 2: 调研（Research & Gather Material）
 
 Use WebSearch to build a foundation of facts, data, examples, and counterarguments. Research should serve the chosen angle, not wander aimlessly.
 
@@ -72,11 +98,11 @@ Use WebSearch to build a foundation of facts, data, examples, and counterargumen
 - Any counterarguments worth addressing
 - Suggested narrative structure: "I think the article could flow like: [A] → [B] → [C]"
 
-Wait for the user to confirm the direction, add materials, or redirect before drafting.
+**Exit prompt:** Ask the user to confirm the direction, add materials, or redirect. Do NOT start drafting until they respond.
 
 ---
 
-### Phase 3: Draft
+### Phase 3: 初稿（Draft）
 
 Write the full article based on the confirmed angle and research.
 
@@ -89,13 +115,13 @@ Write the full article based on the confirmed angle and research.
 
 **Weave in research naturally.** Don't dump facts in a list. "According to a 2024 study..." is fine occasionally, but "a Stanford lab found that..." reads better. Data should feel like part of the conversation, not a footnote.
 
-Present the full draft to the user. Expect feedback — this is a draft, not the final version.
+**Exit prompt:** Present the draft, then tell the user: "接下来我会做事实核查和平台排版。你可以先看稿子，有修改意见随时说。说'继续'我开始核查。"
 
 ---
 
-### Phase 4: Fact Check + Deliver
+### Phase 4: 核查 + 排版（Fact Check + Platform Formatting）
 
-After presenting the draft to the user, automatically run a fact check in the background while waiting for their response. Do NOT rewrite the article based on the fact check — just flag issues.
+Run the fact check immediately after the user confirms (or alongside the draft presentation if user said "继续"). Do NOT rewrite the article based on the fact check — just flag issues.
 
 #### Fact Check
 
@@ -107,7 +133,7 @@ For each claim, mark as:
 - ⚠️ Unverifiable (can't confirm or deny)
 - 🔶 Misleading (technically true but context distorts the meaning)
 
-Present the fact check results alongside the draft:
+Present the fact check results:
 
 ```
 📋 事实核查结果
@@ -122,7 +148,7 @@ If there are ❌ items, point them out clearly but let the user decide whether a
 
 #### Platform Formatting
 
-If the user specified a target platform, also provide a formatted version. If not, ask which platform(s) they want.
+If the user specified a target platform, provide the formatted version(s). If not, ask which platform(s) they want.
 
 **WeChat (公众号):**
 - Title under 30 characters, punchy, curiosity-inducing
@@ -147,13 +173,20 @@ If the user specified a target platform, also provide a formatted version. If no
 
 **Other platforms (Weibo, Douban, etc.):** Adapt as the user requests.
 
+**Exit prompt (MANDATORY):** After presenting fact check + platform versions, you MUST proactively prompt for Phase 5:
+
+> **下一步 → Phase 5: 多角色审查**：5个独立视角（读者、编辑、事实核查、文体教练、平台策略师）同时审稿，帮你找出可能忽略的问题。
+> 说"审查一下"开始，或者说"跳过"直接定稿。
+
+Do NOT skip this prompt. Do NOT end the conversation here. Always guide the user to the final phase.
+
 ---
 
-### Phase 5: Multi-Role Review (Optional)
+### Phase 5: 审查（Multi-Role Review）
 
-After the draft is delivered, the user can request a multi-role review by saying things like "审查一下", "review it", "帮我看看", or "多角色审查".
+When the user confirms (says "审查一下", "review", "帮我看看", "继续", etc.), spawn **5 independent agents in parallel** — each with a different role prompt from the `roles/` directory. Each agent reviews the same article independently and returns a structured report with scores and specific feedback.
 
-When triggered, spawn **5 independent agents in parallel** — each with a different role prompt from the `roles/` directory. Each agent reviews the same article independently and returns a structured report with scores and specific feedback.
+If the user says "跳过" or "不用了", skip this phase and confirm the article is final.
 
 **The 5 roles:**
 
@@ -188,12 +221,14 @@ Then list the top 3-5 issues that multiple roles flagged (convergent problems ar
 
 **CRITICAL: Do NOT auto-revise the article based on reviews.** Present the reviews to the user and let them decide what to change. The user's judgment is final. Only factual errors (❌ from fact checker) should be flagged as "must fix".
 
+**Exit prompt:** "审查完成。以上是5位审稿人的反馈。你可以告诉我要改哪些，或者说'定稿'完成。"
+
 ---
 
 ## After Delivery
 
-The user reads the draft and decides what to change. Your role shifts to executor:
-- User says "good" or "可以了" — done, article is final
+The user reads the output and decides what to change. Your role shifts to executor:
+- User says "good", "可以了", or "定稿" — done, article is final
 - User gives specific feedback ("开头换一个"、"这段太长了"、"语气再轻松点") — make exactly those changes, nothing more
 - User asks for a different platform version — create it
 - User spots a factual error — fix it and re-verify
@@ -203,13 +238,13 @@ Do NOT volunteer unsolicited improvements. Do not say "I also noticed that..." o
 ## Quick Mode
 
 If the user says something like "just write it", "直接写", or "skip the back-and-forth", compress the workflow:
-1. Pick the most interesting angle yourself
+1. Pick the most interesting angle yourself (skip Phase 1 interaction)
 2. Research briefly
 3. Write a full draft
 4. Run the fact check
-5. Present the draft + fact check results + platform-formatted version together
+5. Present draft + fact check + platform-formatted version together
 
-Still allow the user to request changes after.
+**Even in Quick Mode, still show progress indicators** and still prompt for Phase 5 review at the end. The user can always say "跳过".
 
 ## Scripts & Tools
 

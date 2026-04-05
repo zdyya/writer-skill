@@ -2,11 +2,18 @@
 
 从一个碎片化的想法到可发布的文章 —— 一个完整的 AI 写作工作流技能。
 
+```mermaid
+graph LR
+    A[💡 一个想法] --> B[🔍 搜索研究]
+    B --> C[✍️ 写稿]
+    C --> D[📋 事实核查 + 📱 平台排版]
+    D --> E[👥 5角色并行审查]
+    E --> F[✅ 终稿]
+```
+
 ## 这是什么？
 
-这是一个 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 的 Skill，安装后 Claude 会自动识别写作意图并启动完整工作流：
-
-**构思 → 搜索研究 → 写稿 → 事实核查 → 平台排版 → 多角色审查**
+这是一个 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 的 Skill，安装后 Claude 会自动识别写作意图并启动完整工作流。
 
 你只需要给一个想法（哪怕只是一句话），Skill 会引导 Claude 完成从灵感到终稿的全过程。
 
@@ -50,17 +57,13 @@
 
 ## 安装
 
-将 `writer/` 目录复制到你的 Claude Code skills 目录：
-
 ```bash
-# 克隆仓库
-git clone https://github.com/YOUR_USERNAME/writer-skill.git
-
-# 复制到 Claude Code skills 目录
-cp -r writer-skill/writer ~/.claude/skills/writer
+# 克隆仓库并复制到 Claude Code skills 目录
+git clone https://github.com/zdyya/writer-skill.git
+cp -r writer-skill ~/.claude/skills/writer
 ```
 
-或者直接把整个仓库克隆到 skills 目录下。
+只需要 `SKILL.md` 和 `roles/` 目录就能用。其余文件是开发工具，可选。
 
 ## 使用：写文章
 
@@ -139,6 +142,15 @@ python3 -m scripts.run_review /path/to/article.md --output-dir /path/to/reviews
 
 ---
 
+## 输出样例
+
+不想看文档？直接看效果：
+
+- [**文章：全民蒸馏时代**](examples/article-distill-your-ex.md) — 从"如果能把前任蒸馏成AI"这个想法出发，聊 MBTI、标签化社交、AI 思维入侵人际关系
+- [**多角色审查报告**](examples/review-summary.md) — 5 个独立 AI 角色对这篇文章的并行审查结果
+
+以上由 Writer Skill 的完整工作流自动生成。
+
 ## 目录结构
 
 ```
@@ -152,6 +164,11 @@ writer/
 │   ├── fact-checker.md         #   事实核查员 — 数据、引用准确性
 │   ├── style-coach.md          #   文体教练 — 口语节奏、意象
 │   └── strategist.md           #   平台策略师 — 标题力、平台适配
+│
+│  📄 输出样例
+├── examples/
+│   ├── article-distill-your-ex.md  #   示例文章：全民蒸馏时代
+│   └── review-summary.md          #   示例审查报告
 │
 │  🔧 改进 Skill 用的（开发/测试）
 ├── scripts/                    # Python 脚本
