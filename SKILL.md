@@ -87,6 +87,7 @@ Rules for this offer:
 | `quick_mode_default` | If `true`, enter **Auto Plan Mode** by default — skill proposes a full plan, user approves once, then auto-executes Phases 2-6. See "Auto Plan Mode" section below. |
 | `auto_render_wechat` | If `true`, run `python -m scripts.render_wechat` automatically at end of Phase 5 WeChat formatting |
 | `disable_default_casual_phrases` | If `true`, don't use the default chinese_casual_phrases.md word pool. Only use `preferred_phrases` the user explicitly set. Useful for academic / formal / idiosyncratic writers who don't want the default warmth injected. |
+| `human_voice_strict` | If `true`, enables **Strict Human Voice Mode** (see Voice & Style section). Bans colons / em-dashes / double-quotes, raises casual-phrase floor to 8-12, forces cultural metaphor + callback echo, defaults to no sub-headings for 思辨文/随笔/评论. Use this when you want maximum "活人感" (公众号-style casual essays). Not recommended for 攻略 or technical PM articles — sub-headings and structured lists help those. |
 
 **`style_samples` vs `content_sources` — know the difference**:
 
@@ -137,6 +138,72 @@ Articles often include example prompts (e.g. "a good身份 prompt looks like..."
 - ✅ **Keep demo prompts short, parseable, and structurally simple** — the goal is demonstration, not performance
 
 Why this matters: a prose-writer Claude defaults to "make this beautiful" when shown any blank space. Demo prompts are the one place in an article where **beauty is actively counterproductive** — they need to read like they came from someone who's iterated on real prompts, not from a poet.
+
+### Strict Human Voice Mode (opt-in via EXTEND.md `human_voice_strict: true`)
+
+The default voice rules above give a warm, readable tone but still produce text that can feel subtly "AI-shaped" — too many colons, too many em-dashes, too many sub-headings, too even a rhythm. For users who want **maximum 活人感** (公众号-style personal essay voice, indistinguishable from a specific human writer), enable Strict Mode.
+
+**Strict Mode changes (relative to default rules)**:
+
+| Rule | Default | Strict |
+|---|---|---|
+| **Colons `:`** | allowed | **BANNED** — use commas or new sentences |
+| **Em-dashes `——`** | allowed | **BANNED** — use commas, periods, or line breaks |
+| **Double quotes `""` / `""`** | allowed | **BANNED** — use `「」` or no quotes |
+| **Sub-headings (`##`, `###`)** | allowed throughout | **Only allowed for 攻略** (step-by-step guides). 思辨文/随笔/评论 should flow as continuous prose with口语化转场 ("说回来" / "回到 X 这块" / "顺着上面") instead of headings |
+| **Casual-phrase floor** | ≥5 distinct | **≥8 distinct** from `references/chinese_casual_phrases.md` (or user's `preferred_phrases`) |
+| **One-sentence-paragraph** | ≥2-3 per article | **≥5 per article** — use aggressively for rhythm breaks |
+| **Cultural/historical metaphor** | optional | **REQUIRED** — at least one "升维" moment connecting the topic to a broader cultural / historical / literary / philosophical reference (Pygmalion, 黑暗森林, 庄周梦蝶, etc.). Not forced — should feel like "聊着聊着想到的" |
+| **Callback echo (契诃夫之枪)** | optional | **REQUIRED** — something introduced in the opening must re-appear (as variant) in the closing. Creates the feeling of "this is a crafted piece, not a list of points" |
+| **Humility scaffolding** | optional | **REQUIRED** at opening AND closing — "我自己也还在摸索" / "不成熟的经验" / "可能过几个月我就推翻自己" to lower the reader's defensive guard |
+| **Fixed footer** | no | **Optional** — if user specifies 公众号 platform, append the standard WeChat sign-off block (点赞在看转发 + 下次再见) |
+
+**When NOT to use Strict Mode**:
+- 攻略 / 方法论 articles where sub-headings genuinely help readers navigate
+- Technical PM writeups (product design docs, case studies) where structure > voice
+- Translation work
+- Any article going to a platform where 双引号 is expected (e.g. certain journals, Zhihu long-form)
+
+### Visual Blocks in Strict Mode (v1.6 clarification)
+
+**HTML infographic blocks (`:::pyramid` / `:::flowchart` / `:::comparison` / `:::nested`) are STILL ALLOWED in Strict Mode.** They are a core differentiator of writer-skill and shouldn't be lost just because the voice got more casual. But they need tighter discipline so they don't break the prose flow:
+
+**Rules for blocks under Strict Mode**:
+
+1. **Hard cap: ≤ 2 blocks per article** (default mode allows 3-4). More than 2 starts feeling like a报告 not a散文.
+
+2. **Type priority**:
+   - ✅ **pyramid** — best fit. Feels like "I drew this on a napkin while talking"
+   - ✅ **flowchart** — second best. Shows causal chain without looking report-y
+   - ⚠️ **comparison** — use sparingly. The two-column card layout reads most "AI-ish"
+   - ⚠️ **nested** — use only for actual nested semantics (call stacks, org hierarchies). Don't use it as a stylistic choice.
+
+3. **Placement rule**: each block must be **prose-wrapped** — a口语转场 sentence before AND after. The reader should feel "聊到这里顺手画一下" not "作者突然插了一张图".
+   - Before: "看个图可能更直观" / "这三层我画出来你看一眼" / "机制链大概长这样"
+   - After: "顺着这张图往下说" / "回到文章里" / direct continuation of narrative
+
+4. **Content discipline inside the block**:
+   - `footnote` field MUST use casual phrasing, not textbook语言
+     - ❌ "综上所述,三层相互依赖"
+     - ✅ "你只动一层,另外两层会把你拉回原地"
+   - `tag` fields should feel judgemental/opinionated, not neutral labels
+     - ❌ "第一层"
+     - ✅ "最便宜,也最少人敢推"
+   - `subtitle` is optional — often better to skip and let title stand alone
+
+5. **Block omission test**: before adding a block, ask "如果我不画这张图,这三段散文能不能讲清楚?" If yes, don't add the block. Strict Mode defaults to散文-first, visual-second.
+
+**Why blocks still matter in Strict Mode**: pure prose can lose structural information (三层结构 / 机制链的四个环节 / 状态机的分支) in the flow. A well-placed pyramid or flowchart serves as a "landmark" the reader can glance at and re-orient from. It's the equivalent of a friend pausing mid-conversation to sketch something on a napkin — not a presentation aid, a thinking aid.
+
+**Typical good use in a思辨文 under Strict Mode**: one pyramid near the opening (after the central judgment is stated) to show the structural map of the argument, then prose handles the rest. No second block unless you're covering a mechanism chain that really benefits from sequential visualization.
+
+**Phase 3 drafting behavior under Strict Mode**: don't write the draft and *then* fix standards at L1/L2 — write it *already* obeying Strict Mode rules from the first sentence. Specifically:
+1. Before writing, pull 10-12 casual phrases from the pool and **consciously deploy at least 8** throughout
+2. Before writing, pick one cultural metaphor candidate and plan where it lands (usually ~70% through the article, as升华)
+3. Before writing, plan one opening hook element that you'll callback in the closing
+4. Write without using `:`, `——`, `""` — from the first keystroke
+
+This matters because post-hoc cleanup (写完再改) tends to leave residue; writing natively in Strict Mode gives a fundamentally different sentence architecture, not a cleaned-up version of the default one.
 
 ## What AI Can and Can't Do (Boundary)
 
@@ -405,13 +472,15 @@ Workflow:
 1. Info-architect reads the article, proposes candidate blocks
    (position + type + rationale) without writing JSON yet
 2. **Present the candidate list to the user** and wait for confirmation on
-   which to keep. Default cap: **3-4 blocks per 2000-word article** —
-   over-visualization breaks reading rhythm
+   which to keep. Cap varies by mode:
+   - **Default mode**: 3-4 blocks per 2000-word article
+   - **Strict Mode (`human_voice_strict: true`): ≤ 2 blocks** — prose carries most of the weight, blocks only at true structural landmarks
 3. For confirmed candidates, write the JSON block bodies using the
    article's exact wording (no paraphrasing, no invented data)
 4. Insert blocks AFTER the corresponding paragraph (they supplement, not
    replace)
-5. Save the illustrated version as `<slug>-wechat.md`
+5. **In Strict Mode**: ensure each block has a口语转场 sentence *before and after* it — the block should feel like "聊到这里顺手画了一下" not "突然冒出来一张图". Type priority in Strict Mode is pyramid > flowchart > comparison > nested (the last two read more "report-y").
+6. Save the illustrated version as `<slug>-wechat.md`
 
 **Why HTML/CSS instead of image-model-generated images**: image models
 can't spell, can't align pixels, can't keep style consistent across
@@ -570,7 +639,42 @@ Purely mechanical scans. Any hit must be fixed before proceeding. No judgment ca
 - Any `[TODO]` / `[填入真实经历]` / `[example]` markers left over from drafting
 - These are Hard Blocks — user must fill in before finalizing
 
-**Pass**: zero hits across L1-1 to L1-4.
+**L1-5 Forbidden punctuation scan** (ONLY if `human_voice_strict: true`):
+- **Colons `:`** (both full-width `：` and half-width) → replace with commas or split into new sentences
+- **Em-dashes `——`** → replace with commas, periods, or line breaks
+- **Double quotes `""` / `""` / `"..."`** → replace with `「」` or remove quotes entirely
+- Exception: code blocks, URLs, and programming identifiers are exempt
+
+This rule is opt-in because not every article wants a 公众号-style voice — 攻略 and technical articles legitimately need colons and structured quotes. But once on, it's strictly enforced: the difference between "fairly casual" and "feels like a real person" is frequently just these three punctuation marks.
+
+**L1-6 Full-width punctuation scan** (DEFAULT ON for ALL Chinese articles — not opt-in):
+
+**Chinese prose MUST use full-width CJK punctuation, not ASCII half-width.** Mixing half-width punctuation into Chinese sentences is one of the single strongest AI tells — real Chinese writers overwhelmingly use `，。？！；：「」` not `,.?!;:""`. An article can be perfect in every other way and still read as "translated-by-AI" if the commas are ASCII.
+
+Replacement map:
+
+| ASCII | Full-width | Example |
+|---|---|---|
+| `,` | `，` | `然后,AI` → `然后，AI` |
+| `.` (Chinese context) | `。` | `做完了.` → `做完了。` |
+| `?` | `？` | `是吗?` → `是吗？` |
+| `!` | `！` | `太棒了!` → `太棒了！` |
+| `;` | `；` | (rare in Chinese prose anyway) |
+
+Exemptions (don't touch):
+- Decimal points between digits: `3.5`, `v1.6`
+- Text inside code fences ` ``` ` — it's code or quoted literal
+- Text inside `:::blocks` JSON — it's structured data
+- URLs inside `[text](url)` markdown links
+- Inline code in backticks `like_this`
+
+**Auto-fix**: run `python -m scripts.fix_punct <article>.md`. The script implements line-level detection (lines with CJK ratio ≥ 30% are treated as Chinese sentences and all non-exempt ASCII punctuation is converted).
+
+**Pass**: zero ASCII punctuation in Chinese prose lines after auto-fix.
+
+**Why this needed its own check**: Claude (and other LLMs) default to ASCII punctuation when generating Chinese text because the tokenizer and training data mix half-width punctuation into Chinese contexts. Without an explicit normalization step, even a perfectly-toned article will silently fail this test. L1-6 + the auto-fix script = systemic solution instead of hoping the writer remembers.
+
+**Pass overall**: zero hits across L1-1 to L1-4, L1-6. L1-5 only enforced when Strict Mode is on.
 
 #### L2 — Style Consistency Check (pattern matching)
 
@@ -586,14 +690,21 @@ Compare the draft against the user's style anchor (`style_samples` if provided, 
 - ✅ Questions used for pivoting ("为什么？" / "那怎么办？")
 
 **L2-3 Colloquial ratio**:
-- Uses ≥5 distinct phrases from user's `preferred_phrases` or `references/chinese_casual_phrases.md`
+- Default mode: uses **≥5 distinct** phrases from user's `preferred_phrases` or `references/chinese_casual_phrases.md`
+- **Strict Mode (`human_voice_strict: true`): ≥8 distinct** phrases, and each must actually appear in the pool (no "similar-feeling" inventions that drift toward generic)
 - No sentence reads like it was machine-translated from English
 
 **L2-4 Paragraph length**:
 - Mobile-reading friendly: paragraphs avg 2-4 sentences, max ~80 chars per paragraph
 - Exception: code blocks and quoted material
 
-**Pass**: L2-1 passes + at least 3/4 of L2-2/2-3/2-4 pass.
+**L2-5 Sub-heading discipline** (ONLY if `human_voice_strict: true` AND positioning ∈ {思辨文, 随笔, 评论}):
+- Article should flow as continuous prose without `##` / `###` markdown headings
+- Use口语化 transition sentences to bridge sections ("说回来" / "回到 X 这块" / "顺着上面的再聊聊")
+- Visual separators (e.g. `---`) are allowed as breathing space, but not as section labels
+- Exception: 攻略 positioning is exempt (sub-headings genuinely help readers follow multi-step guides)
+
+**Pass**: L2-1 passes + at least 3/4 of L2-2/2-3/2-4 pass (L2-5 only enforced in Strict Mode).
 
 #### L3 — Content Depth Check (judgment-based)
 
@@ -620,7 +731,29 @@ Compare the draft against the user's style anchor (`style_samples` if provided, 
 - **评论**: personal first-take at opening; deeper analysis in middle
 - **翻译**: cultural/language notes where source context matters
 
-**Pass**: L3-1 + L3-2 must pass. L3-3 to L3-5 pass when applicable (skip if not relevant to this piece).
+**L3-6 Cultural metaphor / 升维 moment** (REQUIRED in Strict Mode, encouraged otherwise):
+- Is there at least one point where the article connects the concrete topic to a broader cultural / historical / literary / philosophical reference?
+  - Example connectors: 皮格马利翁 / 庄周梦蝶 / 黑暗森林 / 柏拉图洞穴 / 卡夫卡变形记 / 北京折叠 / 契诃夫之枪
+- The升维 moment should feel like "聊着聊着自然想到的", not like a forced "let me conclude with a grand metaphor"
+- Typical position: ~70% through the article, just before the closing section
+- **Not applicable**: pure translation, short 评论 (< 800 words)
+
+**L3-7 Callback echo / 契诃夫之枪** (REQUIRED in Strict Mode, encouraged otherwise):
+- Does something introduced in the opening re-appear (as variant or transformation) in the closing?
+  - The opening image ("玩具车跑 F1") returns in the closing ("雕像材质变了神话不变")
+  - A hook phrase in paragraph 1 is callback'd as the last line
+- This is the single biggest contributor to "this feels like a crafted piece, not a list of points"
+- **Check**: read opening 3 paragraphs + closing 3 paragraphs — is there a visible thread between them?
+
+**L3-8 Block organicity** (ONLY if article contains `:::blocks`, STRICTER in Strict Mode):
+- Each block must have a口语转场 sentence immediately before it (not a `##` heading, not a cold paragraph break)
+- Each block must have a"拾起" sentence after it that integrates it back into prose flow
+- Block `footnote` field must use casual language, not textbook语言 (✅ "你只动一层,另外两层会把你拉回原地" · ❌ "综上所述,三层相互依赖")
+- Block `tag` fields should sound opinionated, not like neutral labels (✅ "最便宜,也最少人敢推" · ❌ "第一层")
+- **Strict Mode cap check**: ≤ 2 blocks total (default mode allows 3-4)
+- **Strict Mode type check**: prefer pyramid + flowchart; comparison and nested should have a documented reason
+
+**Pass**: L3-1 + L3-2 must pass. L3-3 to L3-5 pass when applicable. L3-6 + L3-7 REQUIRED in Strict Mode, SOFT-CHECK otherwise. L3-8 only applies if blocks exist.
 
 #### L4 — Humanness Final Review (subjective, single judgment)
 
@@ -645,19 +778,22 @@ Specific lenses:
 After completing L1-L4, output a compact audit report:
 
 ```
-## 🔍 四层自检报告
+## 🔍 四层自检报告 [Strict Mode: ON/OFF]
 
 **L1 硬性规则** ✅ / ❌
 - 禁用词：X 处命中（已修复 / 待修复）
 - 结构套话：X 处
 - 空泛工具名：X 处
 - [TODO] placeholders: X 处 ← Hard Block if > 0
+- 禁用标点（Strict）：冒号 X · 破折号 X · 双引号 X  ← Strict Mode only
+- 全角标点（默认开）：中文正文英文标点 X 处（应为 0，否则跑 `python -m scripts.fix_punct`）
 
 **L2 风格一致性** ✅ / ❌
 - 开头：✅
-- 节奏：✅（N 处一句成段）
-- 口语化：✅（使用 N 个偏好词）
+- 节奏：✅（N 处一句成段，Strict 需 ≥5）
+- 口语化：✅（使用 N 个偏好词，默认 ≥5 / Strict ≥8）
 - 段落长度：✅
+- 小标题纪律（Strict）：✅ 纯散文 / ❌ 出现 X 个 `##`  ← Strict Mode only
 
 **L3 内容深度** ✅ / ❌
 - 观点支撑：✅
@@ -665,6 +801,9 @@ After completing L1-L4, output a compact audit report:
 - content_sources 使用率：N%（⚠️ 低于 40%）
 - 反方观点：✅
 - 定位专项（攻略）：✅ 每节有行动点 / ❌ 第 X 节缺行动点
+- 文化升维（Strict 必查）：✅ [metaphor: 皮格马利翁] / ❌ 缺升维moment
+- 回环呼应（Strict 必查）：✅ [开头 X → 结尾 Y] / ❌ 开头的 hook 没 callback
+- Block 有机性（若有 block）：✅ N 张,前后散文包裹 / ❌ 裸插 · Strict 下最多 2 张
 
 **L4 活人感** ✅ / ❌
 - 温度：✅
@@ -673,7 +812,7 @@ After completing L1-L4, output a compact audit report:
 - 心流：✅ / ❌（第 X 段需要回读）
 
 **总评**: 4 层全通过 / X 层需返工
-**Hard Block (if any)**: [TODO] 未填 / 事实错误 / L1 禁用词未替换
+**Hard Block (if any)**: [TODO] 未填 / 事实错误 / L1 禁用词未替换 / Strict 下禁用标点未清
 **优先修复**: [top 1-3 items]
 ```
 

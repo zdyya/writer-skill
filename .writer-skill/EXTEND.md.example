@@ -62,6 +62,13 @@ auto_render_wechat: true
 # 默认 false——skill 会从词库里自然穿插"坦率地讲/其实吧/我是真的觉得"等
 # 如果你写学术风/冷峻风/独特个人腔调，设 true 只用自己的 preferred_phrases
 disable_default_casual_phrases: false
+
+# 严格活人感模式（v1.5 新增，借鉴 khazix-writer 的硬规则）
+# 开启后：禁冒号/破折号/双引号、口语词下限从 5 提到 8、强制文化升维 + 回环呼应、
+# 思辨文/随笔/评论默认不加小标题（攻略不受影响）。
+# 适合：公众号散文、个人随笔、强个人腔调的思辨文。
+# 不适合：攻略 / 技术 PM 文章 / 翻译 / 需要结构化清单的稿子。
+human_voice_strict: false
 ```
 
 ## 放在哪

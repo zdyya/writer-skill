@@ -2,6 +2,98 @@
 
 > 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，遵循语义化版本。
 
+## [1.6.0] - 2026-04-22
+
+**主题**:补 v1.5 的漏——Strict Mode 下 block 不该被主动弃用,要有使用规则。
+
+### 背景
+
+v1.5 Strict Mode 发布后测试发现,Claude 写稿时会"过度解读" Strict = 纯散文,主动弃用 HTML 信息图 block。但 Strict Mode 原本只禁小标题,没禁 block。结果用户失去了 writer-skill 最核心的差异化卖点(block 配图),换来的只是 khazix 化的纯散文。这是规则没写清导致的副作用。
+
+v1.6 把 "Strict 下 block 怎么用" 明写出来,避免 Claude 再主动放弃。
+
+### 新增
+
+- **SKILL.md 新增 "Visual Blocks in Strict Mode" 小节**
+  - 明确:Strict Mode 下 block 仍允许,是 writer-skill 的核心差异化,不能丢
+  - 硬上限:Strict 下 ≤ 2 张(默认 3-4)
+  - 类型优先级:pyramid > flowchart > comparison > nested
+  - 强制散文包裹:每张 block 前后必须有口语转场句
+  - block 内容纪律:footnote 必须口语化,tag 要有判断性不能是中性标签
+  - **Block 省略测试**:加 block 前自问"如果不画,三段散文能不能讲清楚",能就不加
+
+- **Phase 5 节更新**:
+  - 候选清单生成时 Strict Mode 降到 ≤ 2 张
+  - 插入时必须做"散文包裹"处理
+  - 类型优先级明写进 Phase 5 流程
+
+- **L3-8 Block 有机性检查(新)**
+  - 每张 block 必须前有转场后有拾起
+  - footnote 口语化扫描
+  - tag 判断性扫描
+  - Strict Mode 数量和类型双重校验
+
+### 修复
+
+- Strict Mode 下 Claude 的"配图恐慌"——把"不用小标题"错误泛化为"不用任何视觉元素"
+- 自检报告格式加 L3-8 条目
+- **[严重 bug 修复] 英文标点混入中文正文**——v1.4/v1.5 下 Claude 写的所有文章中文正文逗号都是 ASCII `,` 而不是中文 `，`(实测 v1.5 有 232 处英文逗号、0 处中文逗号)。这是极强的 AI tell——一眼翻译感
+  - 根因:Claude 的 tokenizer 把 ASCII 标点训练进了中文上下文,默认输出就是半角
+  - 解决:新增 L1-6 全角标点检查(默认开,不是 opt-in)+ 新脚本 `scripts/fix_punct.py` 一键批量修
+  - 脚本规则:行 CJK 占比 ≥ 30% → 视为中文句子,所有非代码非 URL 非小数点的英文标点替换成全角
+
+### 新增脚本
+
+- **`scripts/fix_punct.py`** —— 全角标点自动修复工具
+  - 用法:`python3 -m scripts.fix_punct <article>.md [--dry-run]`
+  - 保护:代码块 / `:::block` JSON / markdown 链接 URL / 小数点 / 纯英文行
+  - Phase 5 渲染前建议自动跑一次
+
+### 设计取舍
+
+- **为什么不把 block 在 Strict Mode 下直接禁掉**:writer-skill 最大的技术差异就是 HTML block,禁了就只剩下 khazix 的复制品。价值反而消失
+- **为什么用"散文包裹"规则而不是"简单限量"**:数量限制解决不了"块感"问题。真正的问题是 block 和散文的衔接姿态——block 应该像"聊到这里顺手在餐巾纸上画一下",不是"插入一张卡片"
+- **为什么类型优先级 pyramid > comparison**:pyramid 视觉上更像"从上到下一条线"的思考轨迹,comparison 的双列卡片读起来最像"AI 做的表格"。Strict 追求人味就要避开后者
+
+---
+
+## [1.5.0] - 2026-04-22
+
+**主题**：借鉴 khazix-writer 的强规则，补"AI 味"这条 writer-skill 一直没根除的薄弱环节。
+
+### 背景
+
+对比测试发现，writer-skill 默认模式下产出依然有明显 AI 味，而 khazix-writer 的输出人味显著更强。拆解后定位到 4 条机械差别：禁标点 / 口语词硬下限 / 小标题纪律 / 文化升维 + 回环呼应强制。本次把这些嫁接进来，但做成 **opt-in 开关** 不影响攻略和技术 PM 稿子。
+
+### 新增
+
+- **Strict Human Voice Mode** —— EXTEND.md 新字段 `human_voice_strict: true` 开启
+  - `L1-5` 禁标点扫描：冒号 `:`、破折号 `——`、双引号 `""` 全禁（改用 `「」` 或无引号）
+  - `L2-3` 口语词下限从 ≥5 提到 **≥8** distinct phrases
+  - `L2-5` 小标题纪律：思辨文/随笔/评论默认纯散文，用口语转场替代 `##`（攻略不受影响）
+  - `L3-6` 文化升维硬要求：至少一处把具体话题连到更大的文化/历史/文学参照物
+  - `L3-7` 回环呼应硬要求（契诃夫之枪）：开头埋的元素结尾必须 callback
+  - Voice & Style 节新增 Phase 3 写稿行为要求：**原生按 Strict 模式写，不是写完再改**
+
+- **chinese_casual_phrases.md 词库扩充**
+  - 情绪类：加「给我一下子整不会了」「你敢信」「这种感觉太爽了」「我真的被震撼到了」
+  - 口癖类：加「这玩意儿」「不是哥们」「这尼玛就是」「我寻思了一下我没寻思明白」「太特么 X 了」
+
+- **EXTEND.md.example** 对应更新
+
+### 设计取舍
+
+- **为什么做成 opt-in 不做成默认**：攻略和技术文章需要小标题、冒号、结构化清单，把 Strict 规则强加会让这类文章变差。opt-in 让用户按文章类型选
+- **为什么 Strict 下 Phase 3 要"原生写"不是"写完再改"**：后期修补会留残迹（句子结构已按带冒号破折号的方式搭好，拆只会让句子破碎）。第一遍按规则写会得到根本不同的句子架构
+- **为什么要文化升维和回环呼应而不只是标点规则**：标点规则砍 AI 格式特征，升维+呼应加"这是一个作品不是一堆信息"的质感。两个方向都要动
+
+### 哪些不动
+
+- 6 Phase 工作流 / Auto Plan Mode / Core Values / HTML 信息图 DSL / 角色自动发现 / run_review.py 真并行
+- 所有非 Strict 场景行为完全保持 v1.4 一致
+
+---
+
 ## [1.4.0] - 2026-04-22
 
 **主题**：借鉴 khazix-skills 的最佳实践，补齐 skill 的自审、边界、定位三大短板。
