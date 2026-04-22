@@ -1,7 +1,23 @@
+# Python
 __pycache__/
 *.pyc
-.DS_Store
-.env
-.venv/
-.pytest_cache/
 *.egg-info/
+.pytest_cache/
+.venv/
+
+# System
+.DS_Store
+
+# Secrets
+.env
+
+# User-specific config (each user has their own, not shared)
+.writer-skill/EXTEND.md
+
+# Rendered artifacts (not source, generated per-user)
+*-wechat.html
+*-wechat.md
+
+# Draft files
+*-draft.md
+README-v*.md

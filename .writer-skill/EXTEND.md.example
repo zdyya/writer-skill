@@ -1,0 +1,87 @@
+# Writer Skill 个性化配置（示例）
+
+> **第一次使用**：把本文件复制为 `.writer-skill/EXTEND.md`（去掉 `.example` 后缀），
+> 然后按下面的 YAML 填你自己的偏好。`.writer-skill/EXTEND.md` 已在 `.gitignore`
+> 里，不会被提交。完整 schema 见 [references/EXTEND.md.template](../references/EXTEND.md.template)。
+
+```yaml
+version: 1
+
+# 你的目标读者画像。一段自然语言描述，skill 会直接用
+target_reader: |
+  （在这里写你真实写作的目标读者，比如：
+   产品经理 / 独立创作者 / 某个垂直社区的人。
+   越具体越好——"年轻好奇"这种泛描述基本等于没写。）
+
+# 风格锚定：你过往写得最像自己的 1-3 篇文章路径
+# skill 会在 Phase 3 写稿前读这些文件，模仿句式节奏（纯风格参考，不抄内容）
+style_samples:
+  - /absolute/path/to/your/best-piece-1.md
+  # - /absolute/path/to/your/best-piece-2.md
+
+# 内容素材库：你的学习笔记、踩坑本、项目日志、curated 参考材料
+# skill 会在 Phase 2 调研时优先读这些文件作为第一手素材（比 WebSearch 更靠谱）
+# Phase 6 的 source-auditor 角色会审查"这些素材有没有被用进文章"
+# 每个来源可以标 type：learning_notes / war_stories / reference
+content_sources:
+  # - path: /absolute/path/to/your/学习笔记目录/
+  #   type: learning_notes
+  # - path: /absolute/path/to/your/踩坑本.md
+  #   type: war_stories
+  # - path: /absolute/path/to/your/项目 README/
+  #   type: reference
+
+# 禁用词（追加到 SKILL.md 默认禁用词上，不替换）
+# 默认已禁：赋能、抓手、闭环、底层逻辑、颗粒度、链路
+banned_phrases:
+  # - 心智
+  # - 打法
+  # - 赛道
+
+# 偏好用词 / 句式（自然使用，不硬塞）
+preferred_phrases:
+  # - 踩过
+  # - 落地
+  # - 较劲
+  # - "不是 X，是 Y"   # 对比句式
+
+# 默认发布平台（skip Phase 5 的"哪个平台？"询问）
+default_platform: wechat   # wechat | zhihu | xiaohongshu | substack
+
+# 默认字数范围
+default_word_count: [1500, 2500]
+
+# 是否默认进 Auto Plan Mode（skill 给一个计划，你 approve 一次后自动跑完所有 Phase）
+# 说 "一步一步来" 随时可以退出自动模式
+quick_mode_default: false
+
+# Phase 5 结束时自动跑 render_wechat.py 生成 HTML 预览
+auto_render_wechat: true
+
+# 是否关掉默认的中文口语词库（references/chinese_casual_phrases.md）
+# 默认 false——skill 会从词库里自然穿插"坦率地讲/其实吧/我是真的觉得"等
+# 如果你写学术风/冷峻风/独特个人腔调，设 true 只用自己的 preferred_phrases
+disable_default_casual_phrases: false
+```
+
+## 放在哪
+
+| 路径 | 作用域 | 何时用 |
+|---|---|---|
+| `<项目目录>/.writer-skill/EXTEND.md` | 项目级 | 团队共享 / 某个特定专栏 |
+| `~/.writer-skill/EXTEND.md` | 用户级 | 你的个人默认风格 |
+
+两个都存在时，**项目级优先**。
+
+## 最小示例
+
+如果你只想锁一件事（你的声音），最小配置是：
+
+```yaml
+version: 1
+style_samples:
+  - /Users/you/writing/最能代表我风格的那篇.md
+default_platform: wechat
+```
+
+其他字段都走默认。

@@ -1,0 +1,174 @@
+# Writer Skill — User Extensions (EXTEND.md)
+
+This file personalizes the writer skill for one user or one project. It
+overrides the defaults in `SKILL.md` (Audience Profile, Voice & Style,
+platform preferences, etc.).
+
+## Where to put this file
+
+| Path | Scope | When to use |
+|---|---|---|
+| `<cwd>/.writer-skill/EXTEND.md` | Project-level | Team-shared config, or a specific publication with its own voice |
+| `~/.writer-skill/EXTEND.md` | User-level | Your personal default voice across all projects |
+
+If both exist, the project-level file wins.
+
+## What the skill does with this file
+
+At the start of every writing session (before Phase 1), the skill reads
+this file in full and treats it as additional context. Directives below
+override the defaults in `SKILL.md`. **The user is not prompted about
+this** — personalization is silent.
+
+## Full schema (all fields optional)
+
+Copy the block below to your own EXTEND.md and keep only the keys you
+actually want to override. Unused keys fall back to the defaults in
+SKILL.md.
+
+```yaml
+# Version pin — increment when the schema changes so old files still work
+version: 1
+
+# ───────────────────────────────────────────────────────────────
+# Audience & Voice
+# ───────────────────────────────────────────────────────────────
+
+# Replaces the default "young curious reader" Audience Profile.
+# Write a natural-language paragraph; the skill consumes it as-is.
+target_reader: |
+  AI PM 求职者、创业者、产品思辨爱好者。懂产品也懂技术，
+  对学术腔有抗体，爱看"有判断"的内容。会转发那些能当成社交货币
+  的观点文（"原来是这样"），但讨厌鸡汤和空话。
+
+# Files the skill reads at the start of Phase 3 as voice anchors.
+# Give 1-3 articles where your voice comes through strongest.
+# Paths can be absolute or relative to the cwd at write time.
+# PURELY for style — sentence rhythm, word choice, transitions.
+style_samples:
+  - /Users/you/Writing/我的代表作-1.md
+  - /Users/you/Writing/我的代表作-2.md
+
+# Your own content material — learning notes, war stories, project logs,
+# curated references. Read in Phase 2 BEFORE general WebSearch, as
+# first-class source material. Phase 6's source-auditor role checks how
+# well these got used in the draft.
+#
+# Each source takes a path + type. Path can be file or directory.
+# Types:
+#   - learning_notes: your notes from books/courses/talks
+#   - war_stories: your own hands-on 踩坑 / experience logs
+#   - reference: curated quotes, stats, frameworks you return to
+content_sources:
+  - path: /Users/you/Writing/学习笔记/
+    type: learning_notes
+  - path: /Users/you/Writing/踩坑本.md
+    type: war_stories
+
+# Words this user actively avoids. Appended to SKILL.md's default ban list
+# (赋能、抓手、闭环 ...), not replacing it.
+banned_phrases:
+  - 心智
+  - 打法
+  - 赛道
+  - 范式
+  - 底层能力
+
+# Words or patterns this user naturally uses. Use these as grace notes —
+# mirror them where they fit, never force.
+preferred_phrases:
+  - 较劲
+  - 落地
+  - 踩过
+  - 直接
+  - "不是 X，是 Y"  # a rhetorical pattern
+
+# ───────────────────────────────────────────────────────────────
+# Workflow defaults
+# ───────────────────────────────────────────────────────────────
+
+# The user's usual publish target. Skip the "which platform?" question
+# in Phase 4 and go straight to formatting. User can still override by
+# mentioning a different platform.
+default_platform: wechat  # wechat | zhihu | xiaohongshu | substack | other
+
+# Word-count target range. Overrides the default 1500-2500.
+default_word_count: [1200, 2000]
+
+# If true, the skill starts in Auto Plan Mode by default:
+# presents a full execution plan, user approves once, then skill auto-runs
+# Phases 2-6 and delivers all artifacts at the end.
+# User can say "一步一步来" to exit auto mode mid-session.
+quick_mode_default: false
+
+# Opt out of the default Chinese casual phrase pool.
+# When false (default), skill will naturally mix in phrases from
+# references/chinese_casual_phrases.md (转场/判断/自嘲/情绪/拉近 categories)
+# alongside your own preferred_phrases.
+# Set to true if you write in an academic / cold / highly idiosyncratic
+# voice and don't want default casual warmth injected.
+disable_default_casual_phrases: false
+
+# If true, Phase 4 WeChat formatting automatically runs
+# `python -m scripts.render_wechat <slug>-wechat.md --open`
+# after generating the markdown, opening the HTML preview.
+auto_render_wechat: true
+
+# ───────────────────────────────────────────────────────────────
+# Optional: custom reviewer roles (advanced)
+# ───────────────────────────────────────────────────────────────
+
+# Add extra reviewer prompts to Phase 5. Each file must live in roles/
+# and follow the same format as the 5 built-in roles. Include the role
+# name (filename without .md) here to include it in run_review.py's
+# parallel review.
+extra_reviewers: []
+  # - ethics-checker
+  # - seo-optimizer
+```
+
+## Minimum viable example
+
+If you just want to lock in your voice without fiddling with other
+settings, this is enough:
+
+```yaml
+version: 1
+style_samples:
+  - /Users/you/Writing/最能代表我声音的那篇.md
+default_platform: wechat
+```
+
+## How the skill uses each field
+
+**`target_reader`** → Read at the start of every phase. Every drafting
+and reviewing decision filters through "would this bore *this* reader?"
+
+**`style_samples`** → Read in full at the start of Phase 3. Claude matches
+sentence length, paragraph rhythm, opening strategies, punctuation habits,
+transitional phrases. This is the single highest-leverage setting —
+prose style is hard to describe but easy to mirror.
+
+**`banned_phrases` / `preferred_phrases`** → Cross-checked after every
+drafting pass. Banned words are replaced; preferred patterns are
+introduced where they fit naturally, never shoehorned.
+
+**`default_platform` + `default_word_count`** → Skip upfront clarifying
+questions. User can always say "actually make it a Zhihu answer" to
+override mid-session.
+
+**`quick_mode_default` + `auto_render_wechat`** → For high-volume writers
+who've stopped needing guard rails. Everything still works, just with
+fewer pauses.
+
+**`extra_reviewers`** → Register additional roles for Phase 5 multi-role
+review. Each referenced role name must have a matching file at
+`roles/<name>.md`. `run_review.py` auto-discovers these.
+
+## Not supported in v1 (future additions)
+
+- Custom platforms beyond the built-in four (wechat/zhihu/xiaohongshu/substack)
+- Per-platform voice variants (same article, different tones)
+- Automated loading of memory from other Claude skills
+
+If you need any of these, open an issue or file a PR.

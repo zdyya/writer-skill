@@ -25,7 +25,26 @@ from pathlib import Path
 
 from scripts.utils import get_roles_dir, make_claude_env
 
-ALL_ROLES = ["reader", "editor", "fact-checker", "style-coach", "strategist"]
+# Roles whose output is "builder" (modifies the article) rather than
+# "reviewer" (produces feedback). They live in roles/ alongside reviewers
+# for packaging convenience, but multi-role review excludes them — running
+# a builder in a parallel review would overwrite the article.
+BUILDER_ROLES: set[str] = {"info-architect"}
+
+
+def discover_reviewer_roles() -> list[str]:
+    """Scan roles/*.md and return reviewer role names, alphabetically sorted.
+
+    Builder roles (see BUILDER_ROLES) are excluded. This lets us add new
+    reviewer roles by dropping a file into roles/ without editing this script.
+    """
+    roles_dir = get_roles_dir()
+    names = [p.stem for p in roles_dir.glob("*.md")]
+    return sorted(n for n in names if n not in BUILDER_ROLES)
+
+
+# Populated at import time so downstream code keeps working as before.
+ALL_ROLES = discover_reviewer_roles()
 
 
 def run_single_role(
